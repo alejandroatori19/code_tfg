@@ -30,6 +30,7 @@ from ultralytics import YOLO            # Neural net managment
 import cv2 as cv            # UI & save image
 import numpy as np          # Matrix managment
 import json         # Json managment
+import time              # Time information (Duration)
 
 sys.path.append('/opt/robocomp/lib')
 console = Console(highlight=False)
@@ -40,12 +41,14 @@ console = Console(highlight=False)
 
 class SpecificWorker(GenericWorker):
     # Global variables
-    period = 2000     # Clock´s period
-    
+    period = 30     # Clock´s period
+    startTime = None
+    averageTimePerFrame = 0
+
     # Neural net
     neuralNetModel = None
     classList = []
-    confidenceThreshold = 0.8
+    confidenceThreshold = 0.5
     
     
     
@@ -54,7 +57,10 @@ class SpecificWorker(GenericWorker):
     classesInterested = []          # List that saves the classes we are interested in
     counterFrames = None            # Counter of frames
 
-    
+    # Dataset
+    listNameFiles = []
+    pathDataset = "/media/robocomp/externalDisk/dataset/originalImages/"
+
     
     # Paths
     pathFileClasses = "/home/robocomp/robocomp/code_tfg/detection_people_frames/classes.txt"
@@ -62,19 +68,13 @@ class SpecificWorker(GenericWorker):
     pathJsonFile = "/home/robocomp/data.json"
 
 
-
     pathImageTest = "/media/robocomp/externalDisk/dataset/originalImages/image_508.jpeg"
-
-    
-
-    
 
 
     # Detections
     extensionRois = ".jpeg"
 
     # Dataset
-    pathDataset = "/media/robocomp/externalDisk/dataset/originalImages"
     
 
     
@@ -83,18 +83,29 @@ class SpecificWorker(GenericWorker):
         super(SpecificWorker, self).__init__(proxy_map)
         # Setting period
         self.Period = self.period
+        self.startTime = time.time ()
         
+        # Load neural net
+        self.neuralNetModel = YOLO ("yolov8s.pt")
+        
+        # Read all classes from file with code. (Number that identifies them)
+        with open (self.pathFileClasses, 'r') as file:
+            self.classList = [line.strip() for line in file]
+
+        # Here you can read a file that contains which clases it will read
+        self.classesInterested.append (0)
+
+        # Supose in folder there are only files. Image (.pneg)
+        self.listNameFiles = [nameFile for nameFile in os.listdir(self.pathDataset)]
+
         # Timer starts
         self.timer.timeout.connect(self.compute)
         self.timer.start(self.Period)
 
-        # Uploading neural net from file. It must be in the main folder of this component
-        self.upload_neural_net_and_resources ()
-        
 
     # Destructor
     def __del__(self):
-        
+
         return    
 
     # Set parameters
@@ -106,30 +117,44 @@ class SpecificWorker(GenericWorker):
     @QtCore.Slot()
     def compute(self):
         #print('SpecificWorker.compute...')
-        frame = cv.imread (self.pathImageTest)
-        results = self.neuralNetModel (frame)
+        
+        if self.counterFrames < len (self.listNameFiles):
+            # Pre define the path of image (Merging pathDataset + currentImage)
+            pathImage = self.pathDataset + self.listNameFiles[self.counterFrames]
 
-        self.applying_detections (frame, results)
-                
-        self.saveJsonFile ()
+            # Then it reads the image and cross it throught the neural net
+            frame = cv.imread (pathImage)
 
-        self.user_interface (frame, results)
+            # time when it start crossing
+            startTimeDetection = time.time ()
+            
+            # Crossing neural net
+            results = self.neuralNetModel (frame)
+            
+            # Add time to average time
+            self.averageTimePerFrame += (time.time () - startTimeDetection)
+
+            # Split the reuslts per detections and take the ones that interest most. 
+            self.applying_detections (frame, results)
+
+            # Show it to the user. Just for testing.
+            self.user_interface (frame, results)
+
+            self.counterFrames += 1
+        
+        else:
+            # If there aren´t images available then just type the data into json file.
+            self.data_to_user ()
+
+            time.sleep (10)
+
+            # Finally, finish the code
+            sys.exit ("Se ha finalizado correctamente")
+
 
         return True
 
-    # Method that preload the neural net from a file
-    def upload_neural_net_and_resources (self):
-        # Load neural net
-        self.neuralNetModel = YOLO ("yolov8s.pt")
-        
-        # Read all classes from file with code. (Number that identifies them)
-        with open (self.pathFileClasses, 'r') as file:
-            self.classList = [line.strip() for line in file]
-
-        # Here you can read a file that contains which clases it will read
-        self.classesInterested.append (0)
-        
-        return
+    # -------------------------------------------------
 
     # User interface
     def user_interface (self, originalFrame, results):
@@ -143,7 +168,11 @@ class SpecificWorker(GenericWorker):
         cv.imshow ("Detections", imagesConcatenated)
         
         # It waits for a key pressed. If it´s ESC it finishes. Only for testing
-        if cv.waitKey (0) == 27:
+        if cv.waitKey (1) == 27:
+            self.data_to_user ()
+
+            time.sleep (10)
+
             sys.exit (0)
             
         return
@@ -151,15 +180,17 @@ class SpecificWorker(GenericWorker):
     # Save the information of detection in json
     def detectionToJson (self, label, confidence, boundingBox, counterDetections):
         # First of all we got a key (It could exist already)
-        image_name = "image_" + str (self.counterFrames)
+        image_name = self.listNameFiles [self.counterFrames][:self.listNameFiles[self.counterFrames].find ('.')]
+
+        print ("image_name:", image_name)
 
         # Check if it exists, if not just create
         if image_name not in self.detectionData.keys():
             self.detectionData[image_name] = []
 
         # Get the name of original file
-        name_original_image = os.path.basename (self.pathImageTest)
-        name_roi = "image_" + str (self.counterFrames) + "_" + str (counterDetections)
+        name_original_image = self.listNameFiles[self.counterFrames]
+        name_roi = image_name + "_" + str (counterDetections)
 
         boundingBoxes = {"x1" : str (boundingBox.numpy()[0]),
                        "y1" : str (boundingBox.numpy()[1]),
@@ -185,7 +216,7 @@ class SpecificWorker(GenericWorker):
 
     # Method that keeps the output data and save it in json file
     def applying_detections(self, frame, results):
-        counterDetections = 0
+        counterDetections = 1
         print ("\n\n")
 
         # Assuming 'results' is a list
@@ -203,22 +234,37 @@ class SpecificWorker(GenericWorker):
                 print ("Class:", obejctLabel)
                 print ("Confidence:", confidence)
                 print ("Bounding box:", boundingBox)
-
+                print ("\n------------------------------\n")
+                
                 counterDetections += 1
 
             
-            print ("\n------------------------------\n")
+            
 
         
         return
     
        
 
-    def saveJsonFile (self):
+    def data_to_user (self):
+        
+        # Generate data
+        elapsedTime = time.time() - self.startTime
+        self.averageTimePerFrame /= len (self.listNameFiles)
 
+        # Print data
+        print ("\n\n--------------- INFORMATION ---------------")
+        print (f"Time taken: {elapsedTime} seconds")        
+        print (f"Average time per frame: {self.averageTimePerFrame} seconds")
+        print (f"Images processed: {self.counterFrames}")
+        print ("------------- END INFORMATION -------------\n\n")
+        
+        # Save json file
         with open (self.pathJsonFile, 'w') as json_file:
             json.dump (self.detectionData, json_file, indent = 4)
             return
+        
+        
 
         return
 
