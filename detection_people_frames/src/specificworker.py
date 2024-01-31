@@ -44,16 +44,38 @@ class SpecificWorker(GenericWorker):
     
     # Neural net
     neuralNetModel = None
-    labelsListInterest = []
+    classList = []
     confidenceThreshold = 0.8
     
+    
+    
     # Detections
-    detectionData = {}              # Dictionary (Json) which saves the data of detections
-    folderRois = "/media/robocomp/externalDisk/dataset/detectionImages/"
-    extensionRois = ".jpeg"
-        
-    # Testing
+    detectionData = {}              # Dictionary that saves the data from detections
+    classesInterested = []          # List that saves the classes we are interested in
+    counterFrames = None            # Counter of frames
+
+    
+    
+    # Paths
+    pathFileClasses = "/home/robocomp/robocomp/code_tfg/detection_people_frames/classes.txt"
+    pathFolderRois = "/media/robocomp/externalDisk/dataset/detectionImages/"
+    pathJsonFile = "/home/robocomp/data.json"
+
+
+
     pathImageTest = "/media/robocomp/externalDisk/dataset/originalImages/image_508.jpeg"
+
+    
+
+    
+
+
+    # Detections
+    extensionRois = ".jpeg"
+
+    # Dataset
+    pathDataset = "/media/robocomp/externalDisk/dataset/originalImages"
+    
 
     
     # Constructor
@@ -77,7 +99,7 @@ class SpecificWorker(GenericWorker):
 
     # Set parameters
     def setParams(self, params):
-
+        self.counterFrames = 0
         return True
 
 
@@ -89,6 +111,8 @@ class SpecificWorker(GenericWorker):
 
         self.applying_detections (frame, results)
                 
+        self.saveJsonFile ()
+
         self.user_interface (frame, results)
 
         return True
@@ -98,8 +122,12 @@ class SpecificWorker(GenericWorker):
         # Load neural net
         self.neuralNetModel = YOLO ("yolov8s.pt")
         
+        # Read all classes from file with code. (Number that identifies them)
+        with open (self.pathFileClasses, 'r') as file:
+            self.classList = [line.strip() for line in file]
+
         # Here you can read a file that contains which clases it will read
-        self.labelsListInterest.append (0)
+        self.classesInterested.append (0)
         
         return
 
@@ -120,41 +148,45 @@ class SpecificWorker(GenericWorker):
             
         return
 
-    # Method that saves the ROIs of people and save data into json file.
-    def applying_detections2 (self, frame, results):
+    # Save the information of detection in json
+    def detectionToJson (self, label, confidence, boundingBox, counterDetections):
+        # First of all we got a key (It could exist already)
+        image_name = "image_" + str (self.counterFrames)
 
-        predictions = results.xyxy[0].cpu ().numpy ()
+        # Check if it exists, if not just create
+        if image_name not in self.detectionData.keys():
+            self.detectionData[image_name] = []
 
-        for det in predictions:
-            object_label = int(det[5])  # Assuming class label is at index 5
-            confidence = float(det[4])  # Assuming confidence score is at index 4
-            bounding_box = det[:4]  # Assuming bounding box coordinates are at indices 0 to 3
+        # Get the name of original file
+        name_original_image = os.path.basename (self.pathImageTest)
+        name_roi = "image_" + str (self.counterFrames) + "_" + str (counterDetections)
 
-            # Your logic for applying detections here
-            print(f"Object Label: {object_label}, Confidence: {confidence}, Bounding Box: {bounding_box}")
+        boundingBoxes = {"x1" : str (boundingBox.numpy()[0]),
+                       "y1" : str (boundingBox.numpy()[1]),
+                       "x2" : str (boundingBox.numpy()[2]),
+                       "y2" : str (boundingBox.numpy()[3])
+                       }
+
+        # Generate a dictionary with new data
+        newData = {"id_detection" : str (counterDetections),
+                   "name_image_original" : name_original_image,
+                   "name_roi" : name_roi,
+                   "label_detection" : self.classList[label],
+                   "confidence:" : str (confidence),
+                   "boundingBox" : boundingBoxes
+                   }
+
+        self.detectionData[image_name].append (newData)
 
 
-        """
-        # It visualize all the detection per neural net        
-        for dataDetection in results[0].boxes:
-            # First of all it gets the class label (0 - person), confidencePerDetection and bounding boxes
-            obejctLabel = int (dataDetection.cls)               # Class
-            confidence = float (dataDetection.conf.numpy ()[0])                    # Confindence
-            boundingBox = dataDetection.xyxy.numpy ()                   # Bounding box
-    
-            print ("objectLabel:", obejctLabel)
-            print ("confidence:", confidence)
-            print ("boundingbox:", boundingBox)
-            
-            # We are only interested in people and detections that pass the requirements
-            if objectLabel in self.labelsListInterest & confidence > self.confidenceThreshold:
-                
-                a =0
-        """
-        
+
         return
 
+
+    # Method that keeps the output data and save it in json file
     def applying_detections(self, frame, results):
+        counterDetections = 0
+        print ("\n\n")
 
         # Assuming 'results' is a list
         for detection in results[0].boxes:  
@@ -163,11 +195,44 @@ class SpecificWorker(GenericWorker):
             confidence = float (detection.conf.to('cpu')[0])                   # Confindence
             boundingBox = detection.xyxy.to('cpu')[0]                   # Bounding box
             
-            print ("Class:", obejctLabel)
-            print ("Confidence:", confidence)
-            print ("Bounding box:", boundingBox)
+            # Check if the detectino meets the conditions
+            if (obejctLabel in self.classesInterested) & (confidence > self.confidenceThreshold):
+                # Add information to json file
+                self.detectionToJson (obejctLabel, confidence, boundingBox, counterDetections)
+
+                print ("Class:", obejctLabel)
+                print ("Confidence:", confidence)
+                print ("Bounding box:", boundingBox)
+
+                counterDetections += 1
+
             
             print ("\n------------------------------\n")
 
         
         return
+    
+       
+
+    def saveJsonFile (self):
+
+        with open (self.pathJsonFile, 'w') as json_file:
+            json.dump (self.detectionData, json_file, indent = 4)
+            return
+
+        return
+
+
+
+
+
+
+
+"""
+print ("Counter frames:", self.counterFrames)
+
+print ("Class:", obejctLabel)
+print ("Confidence:", confidence)
+print ("Bounding box:", boundingBox)
+
+"""

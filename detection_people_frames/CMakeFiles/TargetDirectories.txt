@@ -1,0 +1,5 @@
+/home/robocomp/robocomp/code_tfg/detection_people_frames/CMakeFiles/edit_cache.dir
+/home/robocomp/robocomp/code_tfg/detection_people_frames/CMakeFiles/rebuild_cache.dir
+/home/robocomp/robocomp/code_tfg/detection_people_frames/src/CMakeFiles/ICES__home_robocomp_robocomp_code_tfg_detection_people_frames_src.dir
+/home/robocomp/robocomp/code_tfg/detection_people_frames/src/CMakeFiles/edit_cache.dir
+/home/robocomp/robocomp/code_tfg/detection_people_frames/src/CMakeFiles/rebuild_cache.dir
