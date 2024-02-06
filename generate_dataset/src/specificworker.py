@@ -172,6 +172,10 @@ class SpecificWorker(GenericWorker):
             if not (os.path.isdir (self.pathDatasetFolderColorFrames) and (not any (os.listdir(self.pathDatasetFolderColorFrames)))):
                   sys.exit ("FAILURE (1): pathDatasetFolderColorFrames isn´t correct. Check the method check_conditions (self)")
 
+            # The path of dataset has to be a folder and it must be empty. If it´s not it will just stop.
+            if not (os.path.isdir (self.pathDatasetFolderDepthFrames) and (not any (os.listdir(self.pathDatasetFolderDepthFrames)))):
+                  sys.exit ("FAILURE (1): pathDatasetFolderDepthFrames isn´t correct. Check the method check_conditions (self)")
+
             # Get the extension of video file
             extensionVideoFile = os.path.basename (self.pathVideo)            # Convert path/videoFile.bag into videoFile.bag
             extensionVideoFile = extensionVideoFile [(extensionVideoFile.find ('.') + 1):]     # Convert videoFile.bag into bag

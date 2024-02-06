@@ -1,0 +1,10 @@
+
+Component save_video_into_disk
+{
+	Communications
+	{
+
+	};
+	language Python;
+};
+
