@@ -31,11 +31,11 @@ class SpecificWorker(GenericWorker):
     averageTimePerFrame = None
 
     # Paths & string data
-    serialNumberCamera = ""
+    serialNumberCamera = "146222252950"                     # Other chance 146222252950
     pathVideoBag = "/home/robocomp/video.bag"
 
 
-    METHOD_RECORDING = 1                # 1 per time, 2 per frames
+    METHOD_RECORDING = 2                # 1 per time, 2 per frames
 
     # Limits per recording
     LIMIT_TIME_RECORDING = 100          # That´s indicated in seconds
@@ -66,10 +66,10 @@ class SpecificWorker(GenericWorker):
 
     def __del__(self):
         # First of all it must show to user the data. It has information about times & number of frames that has been processed
-        self.data_to_user ()
+        if self.counterFrames > 0:
+            self.data_to_user ()
         
         # Stop recording and release resources
-        self.recorder.stop()
         self.pipeline.stop()
 
         return 
@@ -92,12 +92,11 @@ class SpecificWorker(GenericWorker):
         # If there is a frame available it show to the user and save it into disk
         if isFramevailable:
             # Split frame into depth and RGB frame
-            colorFrame = frames.get_color_frame()
-            depthFrame = frames.get_color_frame()
+            colorFrame = frames.get_color_frame().get_data ()
+            depthFrame = frames.get_color_frame().get_data ()
 
             self.user_interface (colorFrame, depthFrame)
             
-            self.recorder.record (frames)
 
             self.counterFrames += 1
 
@@ -159,7 +158,6 @@ class SpecificWorker(GenericWorker):
         colorFrameArray = np.asanyarray (colorFrame)
         depthFrameArray = np.asanyarray (depthFrame)
 
-
         # Show it in 2 windows
         cv.imshow('RGB Frame', colorFrameArray)
         cv.imshow('Depth Frame', depthFrameArray)
@@ -210,14 +208,19 @@ class SpecificWorker(GenericWorker):
         self.configuration.enable_device (self.serialNumberCamera)
 
         # Prepare the configuration of the vieo
-        self.configuration.enable_stream (rs2.stream.color, self.SHAPE_FRAMES, rs2.format.bgr8, self.FPS_RECORDING)
-        self.configuration.enable_stream (rs2.stream.depth, self.SHAPE_FRAMES, rs2.format.z16, self.FPS_RECORDING)
+        self.configuration.enable_stream (rs2.stream.color, self.SHAPE_FRAMES[0], self.SHAPE_FRAMES[1], rs2.format.bgr8, self.FPS_RECORDING)
+        self.configuration.enable_stream (rs2.stream.depth, self.SHAPE_FRAMES[0], self.SHAPE_FRAMES[1], rs2.format.z16, self.FPS_RECORDING)
+
+        # Set the fate of images to the file indicated by the path
+        self.configuration.enable_record_to_file (self.pathVideoBag)        
+
 
         # Start the pipeline with the video offered by the camera which serial number is the ones that saves the variable.
-        self.pipeline.start (self.configuration)
+        pR = self.pipeline.start (self.configuration)
 
         # Recorder
-        self.recorder = rs2.recorder.create_record (self.pathVideoBag, self.pipeline)
+        dR = pR.get_device ()
+        self.recorder = dR.as_recorder ()
 
         return True
     
