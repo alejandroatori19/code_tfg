@@ -1,5 +1,5 @@
 
-Component generate_dataset_split_classes
+Component detection_people_frames
 {
 	Communications
 	{

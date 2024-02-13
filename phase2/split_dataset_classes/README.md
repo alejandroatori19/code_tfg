@@ -1,9 +1,9 @@
-# generate_dataset_split_classes
+# detection_people_frames
 Intro to component here
 
 
 ## Configuration parameters
-As any other component, *generate_dataset_split_classes* needs a configuration file to start. In
+As any other component, *detection_people_frames* needs a configuration file to start. In
 ```
 etc/config
 ```
@@ -16,7 +16,7 @@ EXAMPLE HERE
 To avoid changing the *config* file in the repository, we can copy it to the component's home directory, so changes will remain untouched by future git pulls:
 
 ```
-cd <generate_dataset_split_classes's path> 
+cd <detection_people_frames's path> 
 ```
 ```
 cp etc/config config
@@ -25,5 +25,5 @@ cp etc/config config
 After editing the new config file we can run the component:
 
 ```
-bin/generate_dataset_split_classes config
+bin/detection_people_frames config
 ```

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
-PROJECT(  generate_dataset_split_classes )
+PROJECT(  detection_people_frames )
 
 INCLUDE( /home/robocomp/robocomp/cmake/robocomp.cmake )
 
