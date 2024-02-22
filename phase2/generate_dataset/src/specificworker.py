@@ -41,13 +41,13 @@ class SpecificWorker(GenericWorker):
       startTime = None
 
       # Video
-      pathVideo = "/media/robocomp/externalDisk/rightCameraVideo3.bag"        # The path of the video we will be reading
+      pathVideo = "/home/robocomp/Downloads/videosOficiale/video1.bag"        # The path of the video we will be reading
       pipeline = None         # Pipeline to connect with the video and request
       configuration = None    # Configuration of the pipeline
       
       # Dataset
-      pathDatasetFolderColorFrames = "/media/robocomp/externalDisk/dataset/colorImages/"              # The folder where the dataset will be saved
-      pathDatasetFolderDepthFrames = "/media/robocomp/externalDisk/dataset/depthImages/"
+      pathDatasetFolderColorFrames = "/home/robocomp/dataset/colorImages/"              # The folder where the dataset will be saved
+      pathDatasetFolderDepthFrames = "/home/robocomp/dataset/depthImages/"
       counterFrames = None
 
       isPipelineStarted = False
@@ -77,7 +77,7 @@ class SpecificWorker(GenericWorker):
             self.Period = self.period
             
             # Check if all conditions are meeting
-            self.check_conditions ()
+            #self.check_conditions ()
 
             # Finally init the video preload
             self.initialize_video ()
@@ -144,7 +144,7 @@ class SpecificWorker(GenericWorker):
                   self.user_interface (rotatedColorFrame, rotatedDepthFrame, False) 
 
                   # Saving both frames into disk
-                  self.save_frames_to_disk (rotatedColorFrame, rotatedDepthFrame)
+                  #self.save_frames_to_disk (rotatedColorFrame, rotatedDepthFrame)
                   
                   # Increment the counter (Each image is called image_<number>, and it mustn´t be repeated)
                   self.counterFrames += 1
@@ -319,7 +319,9 @@ class SpecificWorker(GenericWorker):
             # Activate color stream (30 FPS)
             #self.configuration.enable_stream (rs2.stream.color, rs2.format.bgr8, 30)
             #self.configuration.enable_stream (rs2.stream.depth, rs2.format.bgr8, 30)
-            
+
+            self.configuration.enable_all_streams ()
+
             # Starts the pipeline
             self.pipeline.start (self.configuration)
             
