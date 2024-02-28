@@ -1,0 +1,10 @@
+
+Component split_dataset_into_classes
+{
+	Communications
+	{
+
+	};
+	language Python;
+};
+
