@@ -13,7 +13,6 @@ console = Console(highlight=False)
 import pyrealsense2 as rs2
 import numpy as np
 import cv2 as cv
-import json
 import os
 import time
 import shutil
