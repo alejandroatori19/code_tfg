@@ -1,0 +1,10 @@
+
+Component train_classifier_neural_net
+{
+	Communications
+	{
+
+	};
+	language Python;
+};
+
