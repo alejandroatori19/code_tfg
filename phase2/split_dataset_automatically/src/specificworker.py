@@ -93,11 +93,7 @@ class SpecificWorker(GenericWorker):
             frame = cv.imread (self.listaRutasAbsolutasFrames[self.contadorFrames])
 
             # Devuelve los resultados simplemente para obtener la imagen con detecciones. Ya se ha realizado todo el procesamiento y volcado de datos a fichero y directorios
-            resultadosProcesamiento = self.procesamientoFrame (frame)
-
-            # Este flag debe desactivarse para ir mas rapido en la generacion del dataset clasificado
-            if self.MOSTRAR_DETECCIONES_USUARIO:
-                self.mostrar_frames_al_usuario (frame, resultadosProcesamiento[0].plot ())
+            self.procesamientoFrame (frame)
 
             self.contadorFrames += 1
         else:
@@ -188,6 +184,10 @@ class SpecificWorker(GenericWorker):
 
         # Después se van a procesar los datos obtenidos separandolos en distintos arrays para simplificar su entendimiento
         (listaClases, listaPrecision, listaCajaColision) = self.obtencion_y_filtrado_de_resultados (resultados)
+
+        # Este flag debe desactivarse para ir mas rapido en la generacion del dataset clasificado
+        if self.MOSTRAR_DETECCIONES_USUARIO:
+            self.mostrar_frames_al_usuario (frame, resultados[0].plot ())
 
         # Guardado de rois y de datos en archivo json
         self.procesamiento_datos_y_guardado_rois (frame, listaClases, listaPrecision, listaCajaColision) 
