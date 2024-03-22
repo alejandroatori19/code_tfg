@@ -29,11 +29,6 @@ sys.path.append('/opt/robocomp/lib')
 console = Console(highlight=False)
 
 
-# If RoboComp was compiled with Python bindings you can use InnerModel in Python
-# import librobocomp_qmat
-# import librobocomp_osgviewer
-# import librobocomp_innermodel
-
 
 class SpecificWorker(GenericWorker):
     def __init__(self, proxy_map, startup_check=False):
